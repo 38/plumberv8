@@ -1,0 +1,203 @@
+#!/bin/zsh
+if [ ${COLUMNS} -gt 100 ]
+then
+	LEN=100
+else
+	LEN=${COLUMNS}
+fi
+
+
+function die() {
+
+	while popd
+	do
+	done &> /dev/null
+
+	[ -t 1 ] && echo -ne "\e[F\e[$((${LEN} - 9))G\e[031mFail\e[0m\e[E"
+	exit 1
+}
+
+function ACTION() {
+	[ -t 1 ] && \
+	echo -e "[\e[033mACTION\e[0m] $1\e[$((${LEN} - 10))G[    ]" || \
+	echo "[ACTION] $@"
+	shift
+	if [ -t 1 ]; then
+		$@ >> "${LOG_DIR}/out" 2>> "${LOG_DIR}/err" && echo -ne "\e[F\e[$((${LEN} - 9))G\e[032mDone\e[0m\e[E" || die
+	else
+		$@ >> "${LOG_DIR}/out" 2>> "${LOG_DIR}/err" || die
+	fi
+}
+
+function print_help() {
+	echo "Build V8 for Plumber Javascript Servlet"
+	echo "--configure-name=<name> Pass congiure argument to V8 build system"
+	echo "--commit=<tag-name>     Instead of compile the latest code, use the given commit"
+	echo "--install               Install the library after everthing looks good"
+	echo "--prefix=<dir>          The install prefix"
+	echo "--output=<dir>          The outout directory"
+	echo "--reconfigure           Force to re-configure the code"
+	echo "--sync                  Force the gclient sync the code"
+}
+
+function argv() {
+	if [ $# = 2 ] && [ x"$1" = "x--string" ]; then
+		echo $2 | awk -F= '{print $2}'
+	else
+		realpath $(echo $1 | awk -F= '{print $2}')
+	fi
+}
+
+function parse_options() {
+	for arg in $@
+	do
+		case ${arg} in
+			--sync ) 
+				SYNC="yes" 
+				;;
+			--reconfigure )
+				conf="yes" 
+				;;
+			--help )
+				print_help
+				exit 0 ;;
+			--commit=* )
+				COMMIT="$(argv ${arg})"
+				RECONF="yes"
+				;;
+			--output=* )
+				ROOT="$(argv ${arg})"
+				;;
+			--install )
+				INSTALL="yes"
+				;;
+			--prefix=* )
+				INSTALL_PREFIX="$(argv ${arg})"
+				;;
+			--configure-name=* )
+				CONFNAME="$(argv --string ${arg})"
+				;;
+			* )
+				echo "Invalid argument ${arg}"
+				print_help
+				exit 1
+		esac
+	done
+}
+
+function export_lib() {
+	mkdir -p ${ROOT}/lib
+	
+	ACTION "Export libv8all.a" ar rcs ${ROOT}/lib/libv8all.a\
+		${V8_OUT}/obj/v8_{libplatform,libbase,libsampler,external_snapshot,base}/*.o \
+		${V8_OUT}/obj/third_party/icu/{icui18n,icuuc}/*.o
+	
+	rm -rf ${ROOT}/include
+	ACTION "Export headers" ln -s ${V8_DIR}/include ${ROOT}/include
+
+	mkdir -p ${ROOT}/data
+	ACTION "Export blob data" cp ${V8_OUT}/{natives,snapshot}_blob.bin ${ROOT}/data/
+}
+
+function install_lib() {
+	mkdir -p ${INSTALL_PREFIX}/lib/plumberv8
+	mkdir -p ${INSTALL_PREFIX}/include/plumberv8
+	mkdir -p ${INSTALL_PREFIX}/share/plumberv8/blob
+
+	cp -L ${ROOT}/lib/libv8all.a ${INSTALL_PREFIX}/lib/plumberv8
+	chmod -R 644 ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a
+
+	cp -Lrf ${ROOT}/include/* ${INSTALL_PREFIX}/include/plumberv8
+	cat > ${INSTALL_PREFIX}/include/plumberv8/blobdata.h \
+<<BLOB_DATA_H
+#ifndef __PLUMBER_V8_BLOB_DATA_H__
+#define PLUMBER_V8_BLOB_DATA_PATH "${INSTALL_PREFIX}/share/plumberv8/blob/"
+#endif /* __PLUMBER_V8_BLOB_DATA_H__ */
+BLOB_DATA_H
+
+	chmod -R 644 ${INSTALL_PREFIX}/include/plumberv8/*
+	chmod 755 ${INSTALL_PREFIX}/include/plumberv8/libplatform 
+
+	cp -L ${ROOT}/data/* ${INSTALL_PREFIX}/share/plumberv8/blob/
+	chmod -R 644 ${INSTALL_PREFIX}/share/plumberv8/blob/*
+
+	mkdir -p ${INSTALL_PREFIX}/bin
+	
+	LIBS_L="-L${INSTALL_PREFIX}/lib/plumberv8"
+	LIBS_l="-lv8all"
+	CFLAGS="-I ${INSTALL_PREFIX}/include/plumberv8/ -std=c++0x"
+	
+	cat > ${INSTALL_PREFIX}/bin/plumber-v8-config \
+<<CONF_SCRIPT
+#!/bin/bash
+OUTPUT=""
+for arg in \$@; do
+	case \${arg} in
+		--cflags )
+			OUTPUT=\${OUTPUT}" ${CFLAGS}";;
+		--libs )
+			OUTPUT=\${OUTPUT}" ${LIBS_L} ${LIBS_l}";;
+		--libs-only-l )
+			OUTPUT=\${OUTPUT}" ${LIBS_l}";;
+		--libs-only-L )
+			OUTPUT=\${OUTPUT}" ${LIBS_L}";;
+		--cmake-libs )
+			OUTPUT=\${OUTPUT}" ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+		--cmake-include-dir )
+			OUTPUT=\${OUTPUT}" ${INSTALL_PREFIX}/include/plumberv8";;
+		--cmake-cflags-without-I )
+			OUTPUT=\${OUTPUT}" -std=c++0x"
+	esac
+done
+echo \${OUTPUT}
+CONF_SCRIPT
+	chmod 755 ${INSTALL_PREFIX}/bin/plumber-v8-config
+}
+
+SYNC="no"
+RECONF="no"
+CONFNAME="x64.release"
+INSTALL="no"
+INSTALL_PREFIX=""
+COMMIT=""
+ROOT=$(pwd)
+
+parse_options $@
+
+GN_DIR="${ROOT}/depot_tools"
+V8_DIR="${ROOT}/v8"
+V8_OUT="${ROOT}/v8/out.gn/${CONFNAME}"
+LOG_DIR="${ROOT}/log"
+
+rm -rf ${LOG_DIR} 
+mkdir -p ${LOG_DIR}
+touch ${LOG_DIR}/out ${LOG_DIR}/err
+
+pushd ${ROOT}
+#Setup GN
+[ -d ${ROOT}/depot_tools ] || \
+ACTION "Clone Deport Tools" git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH=${PATH}:${GN_DIR}
+
+
+#Config GClient
+[ -d ${ROOT}/v8 ] || ACTION "Configure GClient" gclient config https://chromium.googlesource.com/v8/v8
+
+#Sync V8 source
+[ ! -e ${ROOT}/v8 ] || [ x${SYNC} = "xyes" ] && ACTION "Syncing V8 Source Code" gclient sync --with_branch_heads
+
+pushd ${ROOT}/v8
+[ x"${COMMIT}" = "x" ] || ACTION "Checkout commit ${COMMIT}" git checkout ${COMMIT}
+
+[ ! -d "${V8_OUT}" ] || [ x${RECONF} = "xyes" ] && \
+	rm -rf "${V8_OUT}" && \
+	ACTION "Configure the V8 code" tools/dev/v8gen.py ${CONFNAME}
+
+ACTION "Compile V8 from source code" ninja -C out.gn/${CONFNAME}
+popd
+
+export_lib
+
+[ x"${INSTALL}" = "xyes" ] && ACTION "Install library" install_lib
+
+popd #${ROOT}
