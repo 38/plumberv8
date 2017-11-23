@@ -144,11 +144,11 @@ for arg in \$@; do
 			--libs-only-L )
 				OUTPUT=\${OUTPUT}" ${LIBS_L}";;
 			--cmake-libs )
-				OUTPUT=\${OUTPUT}" -nodefaultlibs c++ c m gcc gcc_s ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+				OUTPUT=\${OUTPUT}"-nodefaultlibs;c++;gcc;gcc_s;${INSTALL_PREFIX}/lib/plumberv8/libv8all.a;c;m";;
 			--cmake-include-dir )
-				OUTPUT=\${OUTPUT}" /usr/include/c++/v1/ ${INSTALL_PREFIX}/include/plumberv8";;
+				OUTPUT=\${OUTPUT}"/usr/include/c++/v1/r;${INSTALL_PREFIX}/include/plumberv8";;
 			--cmake-cflags-without-I )
-				OUTPUT=\${OUTPUT}" -std=c++0x"
+				OUTPUT=\${OUTPUT}"-std=c++0x"
 		esac
 	else
 		case \${arg} in
@@ -161,11 +161,11 @@ for arg in \$@; do
 			--libs-only-L )
 				OUTPUT=\${OUTPUT}" ${LIBS_L}";;
 			--cmake-libs )
-				OUTPUT=\${OUTPUT}" -stdlib=libc++ ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+				OUTPUT=\${OUTPUT}"-stdlib=libc++;${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
 			--cmake-include-dir )
-				OUTPUT=\${OUTPUT}" ${INSTALL_PREFIX}/include/plumberv8";;
+				OUTPUT=\${OUTPUT}"${INSTALL_PREFIX}/include/plumberv8";;
 			--cmake-cflags-without-I )
-				OUTPUT=\${OUTPUT}" -std=c++0x"
+				OUTPUT=\${OUTPUT}"-std=c++0x"
 		esac
 	fi
 done
