@@ -133,6 +133,7 @@ BLOB_DATA_H
 OUTPUT=""
 for arg in \$@; do
 	if [ "x${CXX}" != "xclang++" ]
+	then
 		case \${arg} in
 			--cflags )
 				OUTPUT=\${OUTPUT}"-I/usr/include/c++/v1 ${CFLAGS}";;
