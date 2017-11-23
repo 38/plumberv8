@@ -34,6 +34,7 @@ function print_help() {
 	echo "--configure-name=<name> Pass congiure argument to V8 build system"
 	echo "--commit=<tag-name>     Instead of compile the latest code, use the given commit"
 	echo "--install               Install the library after everthing looks good"
+	echo "--install-only          Try to install the existing build to the system"
 	echo "--prefix=<dir>          The install prefix"
 	echo "--output=<dir>          The outout directory"
 	echo "--reconfigure           Force to re-configure the code"
@@ -70,6 +71,9 @@ function parse_options() {
 				;;
 			--install )
 				INSTALL="yes"
+				;;
+			--install-only )
+				INSTALL_ONLY="yes"
 				;;
 			--prefix=* )
 				INSTALL_PREFIX="$(argv ${arg})"
@@ -158,11 +162,24 @@ SYNC="no"
 RECONF="no"
 CONFNAME="x64.release"
 INSTALL="no"
+INSTALL_ONLY="no"
 INSTALL_PREFIX=""
 COMMIT=""
 ROOT=$(pwd)
 
 parse_options $@
+
+if [ "x${INSTALL_ONLY}" = "xyes" ]
+then
+	if [ -e include ] && [ -e lib ] && [ -e data ] 
+	then
+		ACTION "Install library" install_lib
+		exit 0
+	else
+		echo "Could not find existing build of PlumberV8, you probably needs a full build"
+		exit 1
+	fi
+fi
 
 GN_DIR="${ROOT}/depot_tools"
 V8_DIR="${ROOT}/v8"
