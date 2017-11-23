@@ -144,7 +144,7 @@ for arg in \$@; do
 			--libs-only-L )
 				OUTPUT=\${OUTPUT}" ${LIBS_L}";;
 			--cmake-libs )
-				OUTPUT=\${OUTPUT}"-nodefaultlibs c++ c m gcc gcc_s ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+				OUTPUT=\${OUTPUT}" -nodefaultlibs c++ c m gcc gcc_s ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
 			--cmake-include-dir )
 				OUTPUT=\${OUTPUT}"/usr/include/c++/v1/ ${INSTALL_PREFIX}/include/plumberv8";;
 			--cmake-cflags-without-I )
