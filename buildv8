@@ -136,9 +136,9 @@ for arg in \$@; do
 		--cflags )
 			OUTPUT=\${OUTPUT}" ${CFLAGS}";;
 		--libs )
-			OUTPUT=\${OUTPUT}" ${LIBS_L} ${LIBS_l}";;
+			OUTPUT=\${OUTPUT}"-lc++ ${LIBS_L} ${LIBS_l}";;
 		--libs-only-l )
-			OUTPUT=\${OUTPUT}" ${LIBS_l}";;
+			OUTPUT=\${OUTPUT}"-lc++ ${LIBS_l}";;
 		--libs-only-L )
 			OUTPUT=\${OUTPUT}" ${LIBS_L}";;
 		--cmake-libs )
