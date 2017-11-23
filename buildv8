@@ -132,22 +132,41 @@ BLOB_DATA_H
 #!/bin/bash
 OUTPUT=""
 for arg in \$@; do
-	case \${arg} in
-		--cflags )
-			OUTPUT=\${OUTPUT}" ${CFLAGS}";;
-		--libs )
-			OUTPUT=\${OUTPUT}"-lc++ ${LIBS_L} ${LIBS_l}";;
-		--libs-only-l )
-			OUTPUT=\${OUTPUT}"-lc++ ${LIBS_l}";;
-		--libs-only-L )
-			OUTPUT=\${OUTPUT}" ${LIBS_L}";;
-		--cmake-libs )
-			OUTPUT=\${OUTPUT}"c++ ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
-		--cmake-include-dir )
-			OUTPUT=\${OUTPUT}" ${INSTALL_PREFIX}/include/plumberv8";;
-		--cmake-cflags-without-I )
-			OUTPUT=\${OUTPUT}" -std=c++0x"
-	esac
+	if [ "x${CXX}" != "xclang++" ]
+		case \${arg} in
+			--cflags )
+				OUTPUT=\${OUTPUT}"-I/usr/include/c++/v1 ${CFLAGS}";;
+			--libs )
+				OUTPUT=\${OUTPUT}"-nodefaultlibs -lc++ -lc -lm -lgcc -lgcc_s ${LIBS_L} ${LIBS_l}";;
+			--libs-only-l )
+				OUTPUT=\${OUTPUT}"-nodefaultlibs -lc++ -lc -lm -lgcc -lgcc_s ${LIBS_l}";;
+			--libs-only-L )
+				OUTPUT=\${OUTPUT}" ${LIBS_L}";;
+			--cmake-libs )
+				OUTPUT=\${OUTPUT}"-nodefaultlibs c++ c m gcc gcc_s ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+			--cmake-include-dir )
+				OUTPUT=\${OUTPUT}"/usr/include/c++/v1/ ${INSTALL_PREFIX}/include/plumberv8";;
+			--cmake-cflags-without-I )
+				OUTPUT=\${OUTPUT}" -std=c++0x"
+		esac
+	else
+		case \${arg} in
+			--cflags )
+				OUTPUT=\${OUTPUT}" ${CFLAGS}";;
+			--libs )
+				OUTPUT=\${OUTPUT}"-stdlib=libc++ ${LIBS_L} ${LIBS_l}";;
+			--libs-only-l )
+				OUTPUT=\${OUTPUT}"-stdlib=libc++ ${LIBS_l}";;
+			--libs-only-L )
+				OUTPUT=\${OUTPUT}" ${LIBS_L}";;
+			--cmake-libs )
+				OUTPUT=\${OUTPUT}"-stdlib=libc++ ${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+			--cmake-include-dir )
+				OUTPUT=\${OUTPUT}" ${INSTALL_PREFIX}/include/plumberv8";;
+			--cmake-cflags-without-I )
+				OUTPUT=\${OUTPUT}" -std=c++0x"
+		esac
+	fi
 done
 echo \${OUTPUT}
 CONF_SCRIPT
