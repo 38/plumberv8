@@ -62,7 +62,7 @@ function parse_options() {
 				print_help
 				exit 0 ;;
 			--commit=* )
-				COMMIT="$(argv ${arg})"
+				COMMIT="$(argv --string ${arg})"
 				RECONF="yes"
 				;;
 			--output=* )
