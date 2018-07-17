@@ -149,8 +149,9 @@ BLOB_DATA_H
     else
         LIB_CPP_INC="-nostdinc++ -I/usr/include/c++/v1"
         LIB_CPP_LIBS="-nodefaultlibs -lc++ -lc -lm -lgcc -lgcc_s"
-        LIB_CPP_INC_CMAKE="-nostdinc++;/usr/include/c++/v1"
-        LIB_CPP_LIBS_CMAKE="-nodefaultlibs;c++;gcc;gcc_s;c;m"
+        LIB_CPP_INC_CMAKE="/usr/include/c++/v1;"
+        LIB_CPP_LIBS_CMAKE="-nodefaultlibs;c++;gcc;gcc_s;"
+        LIB_CPP_LIBS_CMAKE_SUFFIX=";c;m"
         LIB_CPP_CFLAGS_CMAKE="-nostdinc++"
     fi
 	
@@ -163,15 +164,15 @@ for arg in \$@; do
 		--cflags )
 			OUTPUT=\${OUTPUT}" ${LIB_CPP_INC} ${CFLAGS}";;
 		--libs )
-			OUTPUT=\${OUTPUT}"  ${LIB_CPP_LIBS} ${LIBS_L} ${LIBS_l}";;
+			OUTPUT=\${OUTPUT}" ${LIB_CPP_LIBS} ${LIBS_L} ${LIBS_l}";;
 		--libs-only-l )
 			OUTPUT=\${OUTPUT}" ${LIB_CPP_LIBS} ${LIBS_l}";;
 		--libs-only-L )
 			OUTPUT=\${OUTPUT}" ${LIBS_L}";;
 		--cmake-libs )
-			OUTPUT=\${OUTPUT}"${LIB_CPP_LIBS_CMAKE};${INSTALL_PREFIX}/lib/plumberv8/libv8all.a";;
+			OUTPUT=\${OUTPUT}"${LIB_CPP_LIBS_CMAKE}${INSTALL_PREFIX}/lib/plumberv8/libv8all.a${LIB_CPP_LIBS_CMAKE_SUFFIX}";;
 		--cmake-include-dir )
-			OUTPUT=\${OUTPUT}"${LIB_CPP_INC_CMAKE};${INSTALL_PREFIX}/include/plumberv8";;
+			OUTPUT=\${OUTPUT}"${LIB_CPP_INC_CMAKE}${INSTALL_PREFIX}/include/plumberv8";;
 		--cmake-cflags-without-I )
 			OUTPUT=\${OUTPUT}"${LIB_CPP_CFLAGS_CMAKE} -std=c++0x"
 	esac
